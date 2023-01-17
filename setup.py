@@ -1,6 +1,14 @@
 from setuptools import setup, find_packages
 
-def choose_proper_prject( requires ):
+# Get version number
+def getVersionNumber():
+    with open("SFC_TF/VERSION", "r") as vfile:
+        version = vfile.read().strip()
+    return version
+
+__version__ = getVersionNumber()
+
+def choose_proper_project( requires ):
     '''
     https://stackoverflow.com/questions/14036181/
     provide-a-complex-condition-in-install-requires-python-
@@ -21,7 +29,7 @@ def choose_proper_prject( requires ):
 
 
 setup(name="SFcalculator_tf",
-    version='0.1',
+    version=__version__,
     author="Minhaun Li",
     description="A Differentiable pipeline connecting molecule models and crystallpgraphy data", 
     url=" ",
@@ -31,7 +39,7 @@ setup(name="SFcalculator_tf",
     install_requires=[
         "gemmi>=0.5.6",
         "reciprocalspaceship>=0.9.18",
-        choose_proper_prject([
+        choose_proper_project([
             "tensorflow>=2.6.0",
             "tensorflow-macos>=2.6.0"]),
         "tensorflow_probability>=0.14.0",
