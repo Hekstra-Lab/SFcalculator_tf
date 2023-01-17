@@ -31,10 +31,12 @@ def choose_proper_project( requires ):
 setup(name="SFcalculator_tf",
     version=__version__,
     author="Minhaun Li",
+    license="MIT",
     description="A Differentiable pipeline connecting molecule models and crystallpgraphy data", 
-    url=" ",
+    url="https://github.com/Hekstra-Lab/SFcalculator",
     author_email='minhuanli@g.harvard.edu',
     packages=find_packages(),
+    include_package_data=True,
     python_requires=">=3.7",
     install_requires=[
         "gemmi>=0.5.6",
