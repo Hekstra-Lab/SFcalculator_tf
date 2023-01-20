@@ -17,6 +17,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install packaging setuptools twine wheel
+        pip install tensorflow
     - name: Publish the Python package
       env:
         TWINE_USERNAME: __token__
