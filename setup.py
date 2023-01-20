@@ -46,4 +46,6 @@ setup(name="SFcalculator_tf",
             "tensorflow-macos>=2.6.0"]),
         "tensorflow_probability>=0.14.0",
     ],
+    setup_requires=["pytest-runner"],
+    tests_require=["pytest", "pytest-cov"],
 )
