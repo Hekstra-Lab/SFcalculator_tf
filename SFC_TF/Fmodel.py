@@ -149,8 +149,6 @@ def F_protein_batch(HKL_array, dr2_array, fullsf_tensor, reciprocal_cell_paras,
 
     return F_calc
 
-# TODO: currently you can't change the atom name, number and order given by the reference PDB
-
 
 class SFcalculator(object):
     '''
@@ -218,7 +216,8 @@ class SFcalculator(object):
                     f"{nansubset} columns not included in the mtz file!")
             # HKL array from the reference mtz file, [N,3]
             self.HKL_array = mtz_reference.get_hkls()
-            self.dHKL = self.unit_cell.calculate_d_array(self.HKL_array).astype("float32")
+            self.dHKL = self.unit_cell.calculate_d_array(
+                self.HKL_array).astype("float32")
             self.dmin = self.dHKL.min()
             assert mtz_reference.cell == self.unit_cell, "Unit cell from mtz file does not match that in PDB file!"
             assert mtz_reference.spacegroup.hm == self.space_group.hm, "Space group from mtz file does not match that in PDB file!"
@@ -244,7 +243,8 @@ class SFcalculator(object):
                 self.dmin = dmin
                 self.Hasu_array = generate_reciprocal_asu(
                     self.unit_cell, self.space_group, self.dmin)
-                self.dHasu = self.unit_cell.calculate_d_array(self.Hasu_array).astype("float32")
+                self.dHasu = self.unit_cell.calculate_d_array(
+                    self.Hasu_array).astype("float32")
                 self.dr2asu_array = self.unit_cell.calculate_1_d2_array(
                     self.Hasu_array)
                 self.HKL_array = None
@@ -330,7 +330,7 @@ class SFcalculator(object):
                                                    return_tensor=True)
         occupancy, _ = packingscore_voxelgrid_tf(
             self.atom_pos_orth, self.unit_cell, self.space_group, vdw_rad, uc_grid_orth_tensor)
-        self.solventpct = np.round(100 - occupancy.numpy()*100, 0)
+        self.solventpct = np.round(100 - occupancy.numpy()*100, 1)
 
         # grid size
         mtz = gemmi.Mtz(with_base=True)
@@ -454,17 +454,17 @@ class SFcalculator(object):
         self.real_grid_mask = rsgrid2realmask(
             rs_grid, solvent_percent=solventpct)
         if not self.HKL_array is None:
-            self.Fmask_HKL = realmask2Fmask(
+            Fmask_HKL = realmask2Fmask(
                 self.real_grid_mask, self.HKL_array)
-            zero_hkl_inds = np.argwhere(self.dHKL <= dmin_nonzero)
-            self.Fmask_HKL = tf.tensor_scatter_nd_update(self.Fmask_HKL, zero_hkl_inds, tf.zeros(len(zero_hkl_inds), dtype=tf.complex64))
+            zero_hkl_bool = tf.constant(self.dHKL <= dmin_nonzero)
+            self.Fmask_HKL = tf.where(zero_hkl_bool,tf.constant(0., dtype=tf.complex64), Fmask_HKL)
             if Return:
                 return self.Fmask_HKL
         else:
-            self.Fmask_asu = realmask2Fmask(
+            Fmask_asu = realmask2Fmask(
                 self.real_grid_mask, self.Hasu_array)
-            zero_hkl_inds = np.argwhere(self.dHasu <= dmin_nonzero)
-            self.Fmask_asu = tf.tensor_scatter_nd_update(self.Fmask_asu, zero_hkl_inds, tf.zeros(len(zero_hkl_inds), dtype=tf.complex64))
+            zero_hkl_bool = tf.constant(self.dHasu <= dmin_nonzero)
+            self.Fmask_asu = tf.where(zero_hkl_bool,tf.constant(0., dtype=tf.complex64), Fmask_asu)
             if Return:
                 return self.Fmask_asu
 
@@ -530,10 +530,10 @@ class SFcalculator(object):
             if Return:
                 return self.Fprotein_asu_batch
 
-    def Calc_Fsolvent_batch(self, solventpct=None, gridsize=None, dmin_mask=6, Return=False, PARTITION=100):
+    def Calc_Fsolvent_batch(self, solventpct=None, gridsize=None, dmin_mask=6, Return=False, PARTITION=100, dmin_nonzero=3.0):
         '''
         Should run after Calc_Fprotein_batch, calculate the solvent mask structure factors in batched manner
-        most parameters are similar to `Calc_Fmask`
+        most parameters are similar to `Calc_Fsolvent`
 
         PARTITION: Int, default 100
             To reduce the memory cost during the computation, we divide the batch into several partitions and loops through them.
@@ -581,11 +581,16 @@ class SFcalculator(object):
                 Fmask_batch = tf.concat([Fmask_batch, Fmask_batch_j], 0)
 
         if not self.HKL_array is None:
-            self.Fmask_HKL_batch = Fmask_batch
-            # TODO force high resoltuion HKL rows to be zero
+            zero_hkl_bool = tf.constant(self.dHKL <= dmin_nonzero)
+            Fmask_batch = tf.where(zero_hkl_bool, tf.constant(
+                0., dtype=tf.complex64), Fmask_batch)
+            self.Fmask_HKL_batch = Fmask_batch 
             if Return:
                 return self.Fmask_HKL_batch
         else:
+            zero_hkl_bool = tf.constant(self.dHasu <= dmin_nonzero)
+            Fmask_batch = tf.where(zero_hkl_bool, tf.constant(
+                0., dtype=tf.complex64), Fmask_batch)
             self.Fmask_asu_batch = Fmask_batch
             if Return:
                 return self.Fmask_asu_batch
