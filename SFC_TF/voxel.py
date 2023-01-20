@@ -2,62 +2,6 @@ import tensorflow as tf
 import numpy as np
 from .symmetry import asu2p1_tf
 
-def voxelvalue_tf_asu(unitcell_grid_center_orth, atom_pos_orth,
-                      frac2orth_tensor, orth2frac_tensor,
-                      vdw_rad_tensor,
-                      s=10., binary=True, cutoff=0.1):
-    '''
-    Differentiably render atom coordinates into real space grid map value
-    Va(d, ra) = 1 / (1 + exp(s*(d-ra)))
-
-    Without applying symmetry operations to the model
-
-    Reference:
-    Orlando, Gabriele, et al. "PyUUL provides an interface between biological 
-    structures and deep learning algorithms." Nature communications 13.1 (2022)
-
-    Parameters
-    ----------
-    unitcell_grid_center_orth: tensor, [N_grid, 3]
-        Cartesian coordinates of real space unitcell grid center
-
-    atom_pos_orth: tensor, [N_atom, 3]
-        cartesian coordinates of model atoms you want to render, in an asu
-
-    frac2orth_tensor: tensor, [3,3]
-        fractionalize matrix
-
-    vdw_rad_tensor: tensor, [N_atom, ]
-        van de waals radius of atoms in the model accordingly
-
-    s: float, default 10.0
-        steepness parameter in the sigmoid function
-
-    binary: binary, default True
-        whether convert the map value to 0/1
-
-    cutoff: float, default 0.1
-        cutoff value to convert to binary. 1 if > cutoff, 0 otherwise.
-
-    Returns
-    -------
-    voxel_value, tensor [N_grid,]
-    '''
-    atom_pos_frac = tf.tensordot(
-        atom_pos_orth, tf.transpose(orth2frac_tensor), 1)
-    atom_pos_frac_incell = atom_pos_frac - tf.math.floor(atom_pos_frac)
-    atom_pos_orth_incell = tf.tensordot(
-        atom_pos_frac_incell, tf.transpose(frac2orth_tensor), 1)
-    voxel2atom_dist = tf.sqrt(tf.reduce_sum(tf.square(unitcell_grid_center_orth[:, None, :] - atom_pos_orth_incell[None, ...]),
-                                            axis=-1))
-    sigmoid_value = 1./(1.+tf.exp(s*(voxel2atom_dist - vdw_rad_tensor)))
-    voxel_value = tf.reduce_sum(sigmoid_value, axis=-1)
-    if binary:
-        return tf.where(voxel_value > cutoff, 1.0, 0.0)
-    else:
-        return voxel_value
-
-
 def voxelvalue_tf_p1(unitcell_grid_center_orth, atom_pos_orth, unit_cell, space_group, vdw_rad_tensor,
                      s=10., binary=True, cutoff=0.1):
     '''
