@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/github/Hekstra-Lab/SFcalculator_tf/branch/master/graph/badge.svg?token=31YACK4HJY)](https://codecov.io/github/Hekstra-Lab/SFcalculator_tf)
 [![PyPI](https://img.shields.io/pypi/v/SFcalculator-tf?color=blue)](https://pypi.org/project/SFcalculator-tf/)
 
-A jax implementation of `SFcalculator`. See the [main page](https://github.com/Hekstra-Lab/SFcalculator) for more information.
+A tensorflow implementation of `SFcalculator`. See the [main page](https://github.com/Hekstra-Lab/SFcalculator) for more information.
 
 To install this package:
 
